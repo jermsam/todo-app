@@ -1,10 +1,11 @@
-import {$, component$, Signal} from '@builder.io/qwik';
+import {$, component$, PropFunction, Signal} from '@builder.io/qwik';
 import {BoardProps} from '~/components/boards/form/BoardForm';
 import {deleteBoard} from '~/store/automerge-doc';
 
 export interface CardProps {
   board: BoardProps;
   open: Signal<boolean>;
+  refreshBoards$: PropFunction<(boards: BoardProps[]) => void>;
 }
 
 export default component$<CardProps>((props) => {
@@ -14,7 +15,8 @@ export default component$<CardProps>((props) => {
     }
   });
   const submit = $(async () => {
-    await deleteBoard(props.board.id)
+    const boards = await deleteBoard(props.board.id) as BoardProps[];
+    await props.refreshBoards$(boards);
   });
   return (
     <div class={'w-[400px] mx-auto mt-2 p-10 rounded-lg shadow relative'}

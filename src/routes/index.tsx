@@ -1,4 +1,4 @@
-import {$, component$, Signal, useOnWindow, useSignal, useTask$, useVisibleTask$} from '@builder.io/qwik';
+import {$, component$, Signal, useOnWindow, useSignal, useVisibleTask$} from '@builder.io/qwik';
 import type {DocumentHead} from '@builder.io/qwik-city';
 import BoardForm, {BoardProps} from '~/components/boards/form/BoardForm';
 import Card from '~/components/boards/card';
@@ -6,33 +6,38 @@ import {findBoards} from '~/store/automerge-doc';
 
 
 function useLocalForageChanges() {
-  const boards:Signal<BoardProps[] | undefined> = useSignal<BoardProps[]>();
+  const boards: Signal<BoardProps[] | undefined> = useSignal<BoardProps[]>();
   
-  useVisibleTask$(async ()=>{
-    boards.value = (await findBoards()) as BoardProps[]
-  })
+  useVisibleTask$(async () => {
+    boards.value = (await findBoards()) as BoardProps[];
+  });
   
   useOnWindow(
     'storage',
     $(async (event) => {
       console.log(event);
-      boards.value = (await findBoards()) as BoardProps[]
-    })
+      boards.value = (await findBoards()) as BoardProps[];
+    }),
   );
   return boards;
 }
 
 export default component$(() => {
- 
-  const boards = useLocalForageChanges()
- 
+  
+  const boards = useLocalForageChanges();
+  
   const editBoard = useSignal(false);
   
   
   return (
     <div class="flex flex-col  min-h-screen bg-gray-100">
       <div class={'flex justify-end w-full bg-white p-10'}>
-        <BoardForm open={editBoard}/>
+        <BoardForm
+          open={editBoard}
+          refreshBoards$={bds => {
+            boards.value = bds;
+          }}
+        />
       </div>
       {
         boards.value && (
@@ -43,6 +48,9 @@ export default component$(() => {
                   key={board.id}
                   board={board}
                   open={editBoard}
+                  refreshBoards$={bds => {
+                    boards.value = bds;
+                  }}
                 />
               ))
             }
