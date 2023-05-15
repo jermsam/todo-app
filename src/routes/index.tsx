@@ -1,39 +1,33 @@
-import {component$, Signal, useSignal, useTask$, useVisibleTask$} from '@builder.io/qwik';
+import {$, component$, Signal, useOnWindow, useSignal, useTask$, useVisibleTask$} from '@builder.io/qwik';
 import type {DocumentHead} from '@builder.io/qwik-city';
 import BoardForm, {BoardProps} from '~/components/boards/form/BoardForm';
 import Card from '~/components/boards/card';
 import {findBoards} from '~/store/automerge-doc';
-import {isBrowser} from '@builder.io/qwik/build';
-// import {routeLoader$} from '@builder.io/qwik-city';
-// import {isBrowser} from '@builder.io/qwik/build';
 
-// export const useBoards = routeLoader$(async () => {
-//   if(isBrowser) {
-//     return (await findBoards()) as BoardProps[];
-//   }
-//   return []
-// });
 
+function useLocalForageChanges() {
+  const boards:Signal<BoardProps[] | undefined> = useSignal<BoardProps[]>();
+  
+  useVisibleTask$(async ()=>{
+    boards.value = (await findBoards()) as BoardProps[]
+  })
+  
+  useOnWindow(
+    'storage',
+    $(async (event) => {
+      console.log(event);
+      boards.value = (await findBoards()) as BoardProps[]
+    })
+  );
+  return boards;
+}
 
 export default component$(() => {
-  const boards:Signal<BoardProps[] | undefined> = useSignal<BoardProps[]>();
+ 
+  const boards = useLocalForageChanges()
  
   const editBoard = useSignal(false);
   
-  useVisibleTask$(async ()=>{
-      boards.value = (await findBoards()) as BoardProps[]
-  })
-  
-  useTask$(()=>{
-   if (isBrowser){
-     window.addEventListener("storage", async () => {
-       // When local storage changes, dump the list to
-       // the console.
-       console.log('we changed');
-       boards.value = (await findBoards()) as BoardProps[]
-     });
-    }
-  })
   
   return (
     <div class="flex flex-col  min-h-screen bg-gray-100">
