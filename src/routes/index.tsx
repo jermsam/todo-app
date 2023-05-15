@@ -1,47 +1,60 @@
-import {$, component$, useSignal,  useTask$} from '@builder.io/qwik';
+import {component$, Signal, useSignal, useTask$, useVisibleTask$} from '@builder.io/qwik';
 import type {DocumentHead} from '@builder.io/qwik-city';
 import BoardForm, {BoardProps} from '~/components/boards/form/BoardForm';
 import Card from '~/components/boards/card';
 import {findBoards} from '~/store/automerge-doc';
-import {isServer} from '@builder.io/qwik/build';
+import {isBrowser} from '@builder.io/qwik/build';
+// import {routeLoader$} from '@builder.io/qwik-city';
+// import {isBrowser} from '@builder.io/qwik/build';
+
+// export const useBoards = routeLoader$(async () => {
+//   if(isBrowser) {
+//     return (await findBoards()) as BoardProps[];
+//   }
+//   return []
+// });
 
 
 export default component$(() => {
- const boards = useSignal<BoardProps[]>([])
-  const editBoard = useSignal(false)
+  const boards:Signal<BoardProps[] | undefined> = useSignal<BoardProps[]>();
+ 
+  const editBoard = useSignal(false);
   
-  useTask$(async ({track,cleanup})=>{
-    track(()=>boards.value)
-    if(!isServer) {
-      boards.value = await findBoards() as BoardProps[];
-    }
-    const abortController = new AbortController();
-    cleanup(() => abortController.abort('cleanup'));
+  useVisibleTask$(async ()=>{
+      boards.value = (await findBoards()) as BoardProps[]
   })
   
- 
+  useTask$(()=>{
+   if (isBrowser){
+     window.addEventListener("storage", async () => {
+       // When local storage changes, dump the list to
+       // the console.
+       console.log('we changed');
+       boards.value = (await findBoards()) as BoardProps[]
+     });
+    }
+  })
+  
   return (
     <div class="flex flex-col  min-h-screen bg-gray-100">
       <div class={'flex justify-end w-full bg-white p-10'}>
-        <BoardForm open={editBoard} />
+        <BoardForm open={editBoard}/>
       </div>
-      {<div>
-        <pre>
-          {JSON.stringify(boards.value)}
-        </pre>
-      </div>}
-      <Card board={
-        {
-          id:'yeee',
-          title: 'Hi 👋',
-          description:' <h1>Welcome!</h1>\n' +
-            '            <p>\n' +
-            '              Can\'t wait to see what you build with qwik!\n' +
-            '              <br/>\n' +
-            '              Happy coding.\n' +
-            '            </p>'
-        }
-      } open={editBoard}/>
+      {
+        boards.value && (
+          <div class="flex gap-1 flex-wrap">
+            {
+              boards.value.map(board => (
+                <Card
+                  key={board.id}
+                  board={board}
+                  open={editBoard}
+                />
+              ))
+            }
+          </div>
+        )
+      }
     </div>
   );
 });
@@ -60,7 +73,5 @@ export const head: DocumentHead = {
       href: 'https://unpkg.com/boxicons@latest/css/boxicons.min.css',
     },
   ],
-  styles: [
-  
-  ]
+  styles: [],
 };

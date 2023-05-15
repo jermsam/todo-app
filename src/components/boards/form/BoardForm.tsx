@@ -1,9 +1,8 @@
-import {$, component$, QRL, useSignal, useStore, useTask$,} from '@builder.io/qwik';
+import {$, component$,  Signal, useSignal, useStore, useTask$} from '@builder.io/qwik';
 
 
 import {v4 as uuidv4} from 'uuid';
 import {isServer} from '@builder.io/qwik/build';
-import {CardProps} from '~/components/boards/card';
 import {addBoard} from '~/store/automerge-doc';
 
 export interface BoardProps {
@@ -13,7 +12,9 @@ export interface BoardProps {
   description?: string;
 }
 
-export interface BoardFormProps extends CardProps{
+export interface BoardFormProps {
+  board?: BoardProps;
+  open: Signal<boolean>;
 }
 
 export default component$<BoardFormProps>((props) => {
