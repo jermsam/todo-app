@@ -9,10 +9,12 @@ type Schema = {
   boards: BoardProps[]
 }
 
-let doc: Schema = Automerge.init();
-
 export const addBoard = async (board: BoardProps) => {
-  
+  let binary = await localforage.getItem('autoMerge-store') as unknown as Uint8Array;
+  let doc: Schema = Automerge.load(binary);
+  if (!doc) {
+    doc = Automerge.init();
+  }
   const newDoc = Automerge.change(doc, (d) => {
     if (!d.boards) {
       d.boards = [] as unknown as Automerge.List<BoardProps>;
@@ -20,7 +22,7 @@ export const addBoard = async (board: BoardProps) => {
     d.boards.push(board);
   });
   doc = newDoc;
-  const binary = Automerge.save(doc);
+  binary = Automerge.save(doc);
   await localforage.clear();
   await localforage.setItem('autoMerge-store', binary);
   return Automerge.load(binary);
@@ -47,13 +49,15 @@ export const updateBoard = async (boardId: string, newBoard: BoardProps) => {
       }
       return b;
     });
+    let binary = await localforage.getItem('autoMerge-store') as unknown as Uint8Array;
+    const doc: Schema = Automerge.load(binary);
     const newDoc = Automerge.change(Automerge.clone(doc), (d) => {
       if (!d.boards) {
         d.boards = [] as unknown as Automerge.List<BoardProps>;
       }
       d.boards = boards as unknown as Automerge.List<BoardProps>;
     });
-    const binary = Automerge.save(newDoc);
+    binary = Automerge.save(newDoc);
     await localforage.clear();
     await localforage.setItem('autoMerge-store', binary);
   } catch (err) {
