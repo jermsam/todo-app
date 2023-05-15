@@ -106,25 +106,23 @@ export const findBoards = async () => {
 
 export const updateBoard = async (boardId: string, newBoard: BoardProps) => {
   try {
-    const doc = undefined as unknown as BoardSchema;
-    const boards = doc.boards.map(b => {
-      if (b.id === boardId) {
-        return newBoard;
-      }
-      return b;
-    });
+    const binary = await localforage.getItem('autoMerge-store') as unknown as Uint8Array;
+    const doc: BoardSchema = Automerge.load(binary);
+    const itemIndex = doc.boards.findIndex((item) => item.id === boardId);
     
-    const newDoc = Automerge.change(Automerge.clone(doc), (d) => {
-      if (!d.boards) {
-        d.boards = [] as unknown as Automerge.List<BoardProps>;
-      }
-      d.boards = boards as unknown as Automerge.List<BoardProps>;
-    });
-   const binary = Automerge.save(newDoc);
-    await localforage.clear();
-    await localforage.setItem('autoMerge-store', binary);
-    const schema: BoardSchema = Automerge.load(binary);
-    return schema.boards as BoardProps[];
+    if (itemIndex !== -1) {
+      const newDoc = Automerge.change(doc, (d) => {
+        d.boards[itemIndex].color = newBoard.color;
+        d.boards[itemIndex].title = newBoard.title;
+        d.boards[itemIndex].description = newBoard.description;
+      });
+      
+      const binary = Automerge.save(newDoc);
+      await localforage.clear();
+      await localforage.setItem('autoMerge-store', binary);
+      const schema: BoardSchema = Automerge.load(binary);
+      return schema.boards;
+    }
   } catch (err) {
     // This code runs if there were any errors.
     console.log(err);

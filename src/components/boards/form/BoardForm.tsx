@@ -3,7 +3,7 @@ import {$, component$, PropFunction, Signal, useSignal, useTask$} from '@builder
 
 import {v4 as uuidv4} from 'uuid';
 import {isServer} from '@builder.io/qwik/build';
-import {addBoard} from '~/store/automerge-doc';
+import {addBoard, updateBoard} from '~/store/automerge-doc';
 
 export interface BoardProps {
   id: string;
@@ -22,14 +22,20 @@ export default component$<BoardFormProps>((props) => {
   const dialogRef = useSignal<HTMLDialogElement>();
   
   const id: string = uuidv4();
-  const board: Signal<BoardProps> = useSignal<BoardProps>({
+  const board: Signal<BoardProps> = useSignal<BoardProps>( props.board || {
     id,
   });
   
   useTask$(async ({track, cleanup}) => {
     track(() => props.open?.value);
+    track(() => props.board);
+    const id: string = uuidv4();
+    board.value = {id};
     if (!isServer) {
       if (props.open?.value === true) {
+        if(props.board) {
+          board.value = props.board
+        }
         dialogRef.value?.showModal();
       }
     }
@@ -49,10 +55,13 @@ export default component$<BoardFormProps>((props) => {
   });
   
   const submit = $(async () => {
-    const boards = await addBoard(board.value);
+    let boards ;
+    if(props.board) {
+      boards = await updateBoard(props.board.id, board.value)
+    } else {
+      boards = await addBoard(board.value);
+    }
     await props.refreshBoards$(boards);
-    const id: string = uuidv4();
-    board.value = {id};
     await handleCloseDialog();
   });
   

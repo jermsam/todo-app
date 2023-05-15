@@ -25,14 +25,15 @@ function useLocalForageChanges() {
 export default component$(() => {
   
   const boards = useLocalForageChanges();
-  
   const editBoard = useSignal(false);
+  const boardToEdit = useSignal<BoardProps>();
   
   
   return (
     <div class="flex flex-col  min-h-screen bg-gray-100">
       <div class={'flex justify-end w-full bg-white p-10'}>
         <BoardForm
+          board={boardToEdit.value}
           open={editBoard}
           refreshBoards$={bds => {
             boards.value = bds;
@@ -50,6 +51,9 @@ export default component$(() => {
                   open={editBoard}
                   refreshBoards$={bds => {
                     boards.value = bds;
+                  }}
+                  setBoardToEdit$={bd =>{
+                    boardToEdit.value = bd;
                   }}
                 />
               ))

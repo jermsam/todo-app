@@ -6,11 +6,13 @@ export interface CardProps {
   board: BoardProps;
   open: Signal<boolean>;
   refreshBoards$: PropFunction<(boards: BoardProps[]) => void>;
+  setBoardToEdit$: PropFunction<(board: BoardProps) => void>;
 }
 
 export default component$<CardProps>((props) => {
-  const handleOpen = $(() => {
+  const handleOpen = $(async () => {
     if (!props.open?.value) {
+      await props.setBoardToEdit$(props.board)
       props.open.value = true;
     }
   });
